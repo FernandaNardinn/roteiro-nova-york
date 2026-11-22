@@ -449,6 +449,16 @@ details.row.is-past .tree{filter:grayscale(1);opacity:.7}
 .check li label{flex:1}
 .check .rdel{margin-top:16px;flex:0 0 auto}
 #resform{margin-top:16px}
+
+/* Reservar: CTA que abre o formulário e caixinhas brancas */
+.resadd{margin-top:16px;width:100%;justify-content:center;border:0;cursor:pointer}
+.resadd span:first-of-type{flex:0 0 auto}
+.check input[type="checkbox"]{-webkit-appearance:none;appearance:none;width:24px;height:24px;margin:0;border:2px solid #9CA3AF;border-radius:6px;background:#FFFFFF;display:grid;place-content:center;cursor:pointer;flex:0 0 auto}
+.check input[type="checkbox"]:checked{background:var(--yellow);border-color:var(--yellow)}
+.check input[type="checkbox"]:checked::after{content:"";width:12px;height:7px;border-left:2.5px solid #fff;border-bottom:2.5px solid #fff;transform:translateY(-2px) rotate(-45deg)}
+.check input[type="checkbox"]:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.check label>span{display:grid;gap:4px}
+.check .checklink{display:inline-flex;width:fit-content;margin-top:4px}
 </style>
 </head>
 <body>
@@ -927,7 +937,7 @@ const daytabs=document.querySelector(".daytabs");
 function setMenu(sec){document.querySelectorAll(".menu a").forEach(a=>a.toggleAttribute("aria-current",false));const m=document.querySelector(`.menu a[data-sec="${sec}"]`);if(m)m.setAttribute("aria-current","page")}
 function show(){
   let id=(location.hash||"").slice(1);
-  if(EXTRA[id]){view.innerHTML=EXTRA[id].html();{const h=view.querySelector("h2");if(h&&curId!==null){h.setAttribute("tabindex","-1");h.focus({preventScroll:true});}}daytabs.hidden=true;view.classList.remove("in-left","in-right");curId=id;setMenu(id);window.scrollTo(0,0);return;}
+  if(EXTRA[id]){if(curId!==id)RES_ADDING=false;view.innerHTML=EXTRA[id].html();{const h=view.querySelector("h2");if(h&&curId!==null){h.setAttribute("tabindex","-1");h.focus({preventScroll:true});}}daytabs.hidden=true;view.classList.remove("in-left","in-right");curId=id;setMenu(id);window.scrollTo(0,0);return;}
   if(id==="roteiro"||!VIEWS.find(x=>x.id===id)) id=lastDay||pickDefault();
   const v=VIEWS.find(x=>x.id===id);
   const i=VIEWS.indexOf(v), prevI=VIEWS.findIndex(x=>x.id===curId);
@@ -1244,15 +1254,15 @@ function resHTML(){
   return `<div class="dayhead"><div class="eyebrow">Antes de viajar</div><h2>O que reservar e fazer</h2>
    <div class="progress"><span>${done} de ${items.length}</span><div class="bar"><i style="width:${items.length?Math.round(done/items.length*100):0}%"></i></div></div></div>
    <div class="card"><ul class="check">${items.map((it,i)=>`<li><label for="r${i}"><input type="checkbox" id="r${i}" data-rk="${esc(it.k)}" ${RES.done[it.k]?"checked":""}><span><b>${esc(it.t)}</b>${it.w?`<span>${esc(it.w)}</span>`:""}${it.link?`<a class="checklink" href="${it.link}" rel="noopener">Abrir site${EXT}</a>`:""}</span></label>${it.custom?`<button type="button" class="btn small danger rdel" data-rdel="${esc(it.custom)}" aria-label="Excluir ${esc(it.t)}">Excluir</button>`:""}</li>`).join("")}</ul></div>
-   <form class="addform" id="resform">
+   ${RES_ADDING?`<form class="addform" id="resform">
      <h3>Nova tarefa</h3>
      <label>O que fazer<input type="text" name="t" required maxlength="140" placeholder="Ex.: Comprar adaptador de tomada"></label>
      <label>Detalhe (opcional)<input type="text" name="w" maxlength="300" placeholder="Ex.: tomada tipo A/B dos EUA"></label>
-     <button type="submit" class="cta">${PLUS}<span>Adicionar à lista</span></button>
-     <p class="savenote" role="status">${esc(RES_NOTE)}</p>
-   </form>`;
+     <div class="eactions"><button type="submit" class="cta">${PLUS}<span>Adicionar</span></button><button type="button" class="btn" data-resact="cancel">Cancelar</button></div>
+   </form>`:`<button type="button" class="cta resadd" data-resact="open">${PLUS}<span>Adicionar à lista</span></button>`}
+   ${RES_NOTE?`<p class="savenote" role="status">${esc(RES_NOTE)}</p>`:""}`;
 }
-let RES_NOTE="";
+let RES_NOTE="",RES_ADDING=false;
 function updateResProgress(){const items=resItems(),done=items.filter(i=>RES.done[i.k]).length;const p=view.querySelector(".progress");if(p){p.querySelector("span").textContent=`${done} de ${items.length}`;p.querySelector(".bar i").style.width=(items.length?Math.round(done/items.length*100):0)+"%";}}
 let resTimer=null,resWriting=false,resPending=false;
 function saveRes(){
@@ -1264,16 +1274,18 @@ async function writeRes(){
   if(resWriting){resPending=true;return} resWriting=true;
   try{await DB.doc("lists/reservas").set({custom:RES.custom,done:RES.done,v:1});RES_NOTE="Salvo. Aparece igual em qualquer aparelho."}
   catch(e){RES_NOTE="Não deu para salvar online. Ficou salvo neste celular."}
-  resWriting=false; const n=view.querySelector("#resform .savenote"); if(n) n.textContent=RES_NOTE;
+  resWriting=false; const n=view.querySelector(".savenote"); if(n) n.textContent=RES_NOTE;
   if(resPending){resPending=false;writeRes()}
 }
 view.addEventListener("submit",e=>{
   if(e.target.id!=="resform") return; e.preventDefault();
   const fd=new FormData(e.target), t=(fd.get("t")||"").toString().trim(); if(!t) return;
   RES.custom.push({id:"t"+Date.now().toString(36),t:t.slice(0,140),w:(fd.get("w")||"").toString().trim().slice(0,300)});
-  saveRes(); view.innerHTML=resHTML(); const f=view.querySelector('#resform input[name="t"]'); if(f) f.focus();
+  RES_ADDING=false; saveRes(); view.innerHTML=resHTML(); const nb=view.querySelector('[data-resact="open"]'); if(nb) nb.focus();
 });
 view.addEventListener("click",e=>{
+  const ra=e.target.closest("[data-resact]");
+  if(ra){RES_ADDING=ra.dataset.resact==="open";view.innerHTML=resHTML();if(RES_ADDING){const f=view.querySelector('#resform input[name="t"]');if(f)f.focus();}else{const nb=view.querySelector('[data-resact="open"]');if(nb)nb.focus();}return}
   const b=e.target.closest("[data-rdel]"); if(!b) return;
   const id=b.dataset.rdel; RES.custom=RES.custom.filter(c=>c.id!==id); delete RES.done["c:"+id];
   saveRes(); view.innerHTML=resHTML();
