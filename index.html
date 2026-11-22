@@ -444,6 +444,11 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
 /* Ícone de atividade de Natal */
 .tree{width:22px;height:22px;margin-right:8px;vertical-align:-5px;flex:0 0 auto}
 details.row.is-past .tree{filter:grayscale(1);opacity:.7}
+
+.check li{display:flex;align-items:flex-start;gap:8px}
+.check li label{flex:1}
+.check .rdel{margin-top:16px;flex:0 0 auto}
+#resform{margin-top:16px}
 </style>
 </head>
 <body>
@@ -893,9 +898,7 @@ const CONTACT_INFO={
 };
 
 const EXTRA={
-  reservas:{html:()=>{const done=CHECK.filter((c,i)=>saved[i]).length;return `<div class="dayhead"><div class="eyebrow">Antes de viajar</div><h2>O que reservar</h2>
-   <div class="progress"><span>${done} de ${CHECK.length}</span><div class="bar"><i style="width:${Math.round(done/CHECK.length*100)}%"></i></div></div></div>
-   <div class="card"><ul class="check">${CHECK.map(([t,w],i)=>`<li><label for="c${i}"><input type="checkbox" id="c${i}" ${saved[i]?"checked":""}><span><b>${esc(t)}</b><span>${esc(w)}</span>${CHECKLINK[t]?`<a class="checklink" href="${CHECKLINK[t]}" rel="noopener">Abrir site${EXT}</a>`:""}</span></label></li>`).join("")}</ul></div>`}},
+  reservas:{html:()=>resHTML()},
   dicas:{html:()=>`<div class="dayhead"><div class="eyebrow">Para não passar sufoco</div><h2>Dicas</h2></div>
    <div class="card"><ul class="tips">${TIPS.map(([b,t])=>`<li><b>${esc(b)}</b><span>${esc(t)}</span></li>`).join("")}</ul></div>`},
   contatos:{html:()=>`<div class="dayhead"><div class="eyebrow">Guarde no celular</div><h2>Contatos</h2></div>
@@ -933,9 +936,9 @@ function show(){
   const t=document.getElementById("t-"+v.id); tabs.scrollLeft=t.offsetLeft-(tabs.clientWidth-t.offsetWidth)/2;
 }
 view.addEventListener("change",e=>{
-  if(e.target.type!=="checkbox")return; saved[e.target.id.slice(1)]=e.target.checked;
-  try{localStorage.setItem("ny-check",JSON.stringify(saved))}catch(err){}
-  const done=CHECK.filter((c,i)=>saved[i]).length;const p=view.querySelector(".progress");if(p){p.querySelector("span").textContent=`${done} de ${CHECK.length}`;p.querySelector(".bar i").style.width=Math.round(done/CHECK.length*100)+"%";}
+  const k=e.target.dataset&&e.target.dataset.rk; if(!k||e.target.type!=="checkbox") return;
+  if(e.target.checked) RES.done[k]=true; else delete RES.done[k];
+  saveRes(); updateResProgress();
 });
 tabs.addEventListener("click",e=>{const a=e.target.closest(".tab");if(!a)return;
   if(location.hash===a.getAttribute("href")){e.preventDefault();show();}
@@ -1215,6 +1218,67 @@ view.addEventListener("keydown",e=>{
   const nh=view.querySelector(`.erow[data-id="${CSS.escape(id)}"] .handle`); if(nh) nh.focus();
 });
 
+
+
+/* ===== Reservar: itens fixos + tarefas novas da Rafa ===== */
+let RES={custom:[],done:{}};
+CHECK.forEach(([t],i)=>{ if(saved[i]) RES.done["b:"+t]=true; }); /* migra marcações antigas (por posição) */
+try{const r=JSON.parse(localStorage.getItem("ny-res")||"null"); if(r) RES=sanitizeRes(r)||RES;}catch(e){}
+function sanitizeRes(r){
+  if(!r||typeof r!=="object") return null;
+  const custom=Array.isArray(r.custom)?r.custom.filter(x=>x&&typeof x.id==="string"&&typeof x.t==="string").slice(0,100).map(x=>({id:x.id.slice(0,40),t:x.t.slice(0,140),w:typeof x.w==="string"?x.w.slice(0,300):""})):[];
+  const done={}; if(r.done&&typeof r.done==="object") Object.keys(r.done).slice(0,300).forEach(k=>{if(r.done[k]===true) done[k.slice(0,200)]=true});
+  return {custom,done};
+}
+function resItems(){return [...CHECK.map(([t,w])=>({k:"b:"+t,t,w,link:CHECKLINK[t]})),...RES.custom.map(c=>({k:"c:"+c.id,t:c.t,w:c.w,custom:c.id}))]}
+function resHTML(){
+  const items=resItems(), done=items.filter(i=>RES.done[i.k]).length;
+  return `<div class="dayhead"><div class="eyebrow">Antes de viajar</div><h2>O que reservar e fazer</h2>
+   <div class="progress"><span>${done} de ${items.length}</span><div class="bar"><i style="width:${items.length?Math.round(done/items.length*100):0}%"></i></div></div></div>
+   <div class="card"><ul class="check">${items.map((it,i)=>`<li><label for="r${i}"><input type="checkbox" id="r${i}" data-rk="${esc(it.k)}" ${RES.done[it.k]?"checked":""}><span><b>${esc(it.t)}</b>${it.w?`<span>${esc(it.w)}</span>`:""}${it.link?`<a class="checklink" href="${it.link}" rel="noopener">Abrir site${EXT}</a>`:""}</span></label>${it.custom?`<button type="button" class="btn small danger rdel" data-rdel="${esc(it.custom)}" aria-label="Excluir ${esc(it.t)}">Excluir</button>`:""}</li>`).join("")}</ul></div>
+   <form class="addform" id="resform">
+     <h3>Nova tarefa</h3>
+     <label>O que fazer<input type="text" name="t" required maxlength="140" placeholder="Ex.: Comprar adaptador de tomada"></label>
+     <label>Detalhe (opcional)<input type="text" name="w" maxlength="300" placeholder="Ex.: tomada tipo A/B dos EUA"></label>
+     <button type="submit" class="cta">${PLUS}<span>Adicionar à lista</span></button>
+     <p class="savenote" role="status">${esc(RES_NOTE)}</p>
+   </form>`;
+}
+let RES_NOTE="";
+function updateResProgress(){const items=resItems(),done=items.filter(i=>RES.done[i.k]).length;const p=view.querySelector(".progress");if(p){p.querySelector("span").textContent=`${done} de ${items.length}`;p.querySelector(".bar i").style.width=(items.length?Math.round(done/items.length*100):0)+"%";}}
+let resTimer=null,resWriting=false,resPending=false;
+function saveRes(){
+  try{localStorage.setItem("ny-res",JSON.stringify(RES))}catch(e){}
+  if(!DB){RES_NOTE="Salvo neste celular.";return}
+  clearTimeout(resTimer); resTimer=setTimeout(writeRes,500);
+}
+async function writeRes(){
+  if(resWriting){resPending=true;return} resWriting=true;
+  try{await DB.doc("lists/reservas").set({custom:RES.custom,done:RES.done,v:1});RES_NOTE="Salvo. Aparece igual em qualquer aparelho."}
+  catch(e){RES_NOTE="Não deu para salvar online. Ficou salvo neste celular."}
+  resWriting=false; const n=view.querySelector("#resform .savenote"); if(n) n.textContent=RES_NOTE;
+  if(resPending){resPending=false;writeRes()}
+}
+view.addEventListener("submit",e=>{
+  if(e.target.id!=="resform") return; e.preventDefault();
+  const fd=new FormData(e.target), t=(fd.get("t")||"").toString().trim(); if(!t) return;
+  RES.custom.push({id:"t"+Date.now().toString(36),t:t.slice(0,140),w:(fd.get("w")||"").toString().trim().slice(0,300)});
+  saveRes(); view.innerHTML=resHTML(); const f=view.querySelector('#resform input[name="t"]'); if(f) f.focus();
+});
+view.addEventListener("click",e=>{
+  const b=e.target.closest("[data-rdel]"); if(!b) return;
+  const id=b.dataset.rdel; RES.custom=RES.custom.filter(c=>c.id!==id); delete RES.done["c:"+id];
+  saveRes(); view.innerHTML=resHTML();
+});
+(async()=>{
+  try{ if(!window.claude||!window.claude.use) return; const db=await window.claude.use("db"); if(!db) return;
+    db.doc("lists/reservas").onSnapshot(snap=>{
+      if(!snap.exists||resWriting||resTimer&&resPending) return;
+      const r=sanitizeRes(snap.data()); if(!r) return;
+      if(JSON.stringify(r)!==JSON.stringify(RES)){RES=r;try{localStorage.setItem("ny-res",JSON.stringify(RES))}catch(e){} if(curId==="reservas"&&!view.contains(document.activeElement&&document.activeElement.closest("#resform"))) view.innerHTML=resHTML();}
+    },()=>{});
+  }catch(e){}
+})();
 
 show();
 </script>
