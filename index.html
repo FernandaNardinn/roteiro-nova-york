@@ -827,6 +827,36 @@ const OPTS={
  ]
 };
 
+
+/* Mais opções de comida (sem pizza) */
+const MORE_EAT={
+ "qui-26":[
+  {n:"Shake Shack DUMBO",d:"Hambúrguer e milkshake da rede nascida em NY, aos pés da Brooklyn Bridge.",a:"1 Old Fulton St, Brooklyn",h:"Confirmar no mapa (feriado)",$:"$$",at:"DUMBO + Brooklyn Bridge Park",walk:"3 min a pé",rec:"ShackBurger e milkshake"},
+  {n:"Gran Eléctrica",d:"Mexicano animado no DUMBO, com tacos e margaritas.",a:"5 Front St, Brooklyn",h:"Confirmar no mapa (feriado)",$:"$$",at:"DUMBO + Brooklyn Bridge Park",walk:"3 min a pé",rec:"Tacos e uma margarita"},
+  {n:"Jacques Torres Chocolate",d:"A primeira loja do chocolatier famoso, com fábrica à vista. Ótimo para a sobremesa.",a:"66 Water St, Brooklyn",p:"(718) 875-1269",h:"Confirmar no mapa (feriado)",$:"$",at:"DUMBO + Brooklyn Bridge Park",walk:"5 min a pé",rec:"Chocolate quente e o cookie de chocolate"}
+ ],
+ "sex-27":[
+  {n:"Zabar's",d:"Empório judaico lendário do Upper West Side, desde 1934, com café e balcão de sanduíches.",a:"2245 Broadway (W 80th St), New York",p:"(212) 787-2000",h:"Por volta das 8h–19h30",$:"$",at:"Museu de História Natural (AMNH)",walk:"8 min a pé",rec:"Bagel com salmão defumado e cream cheese"},
+  {n:"Jacob's Pickles",d:"Comida do sul dos EUA: frango frito, biscuits e picles da casa. Barulhento e divertido.",a:"680 Columbus Ave, New York",h:"Confirmar no mapa",$:"$30 ou menos",at:"Central Park a pé",walk:"15 min a pé",rec:"Biscuit com frango frito e mel"}
+ ],
+ "sab-28":[
+  {n:"Miznon",d:"Comida de rua israelense do chef Eyal Shani, em pão pita, dentro do Chelsea Market.",a:"Chelsea Market, 435 W 15th St, New York",p:"(646) 490-5871",h:"Dentro do horário do mercado",$:"$$",at:"Chelsea Market",walk:"dentro do mercado",rec:"Couve-flor assada inteira e o pita de minute steak"},
+  {n:"Magnolia Bakery",d:"A doceria do cupcake de Sex and the City e do pudim de banana.",a:"401 Bleecker St, New York",h:"Confirmar no mapa",$:"$",at:"West Village",walk:"5 min a pé",rec:"Pudim de banana"}
+ ],
+ "dom-29":[
+  {n:"Café Mogador",d:"Marroquino querido de Williamsburg, ótimo para brunch, com pratos de uns $15.",a:"133 Wythe Ave, Brooklyn",h:"Por volta das 9h até tarde",$:"$$",at:"Williamsburg",walk:"5 min a pé da Bedford Ave",rec:"Ovos marroquinos (shakshuka) com pão"},
+  {n:"Martha's Country Bakery",d:"Confeitaria de bairro com bolos e cheesecakes famosos.",a:"263 Bedford Ave, Brooklyn",h:"Confirmar no mapa",$:"$",at:"Williamsburg",walk:"na própria Bedford Ave",rec:"Uma fatia de cheesecake"},
+  {n:"Pies 'n' Thighs",d:"Frango frito e tortas no estilo do sul dos EUA.",a:"166 S 4th St, Brooklyn",h:"Confirmar no mapa",$:"$$",at:"Williamsburg",walk:"10 min a pé",rec:"Frango frito com biscuit"}
+ ],
+ "seg-30":[
+  {n:"Xi'an Famous Foods",d:"Macarrão puxado à mão e apimentado, da cidade de Xi'an, na China.",a:"Bayard St, Chinatown, New York",h:"Confirmar no mapa",$:"$",at:"Chinatown + Little Italy",walk:"3 min a pé",rec:"Macarrão de cordeiro com cominho"},
+  {n:"Russ & Daughters",d:"Loja judaica de 1914, famosa pelo bagel com salmão defumado.",a:"179 E Houston St, New York",h:"Confirmar no mapa",$:"$$",at:"Chinatown + Little Italy",walk:"15 min a pé",rec:"Bagel com salmão defumado e cream cheese"}
+ ],
+ "ter-01":[
+  {n:"Urbanspace Vanderbilt",d:"Praça de alimentação com mais de 20 balcões ao lado da Grand Central.",a:"230 Park Ave (E 45th St), New York",p:"(646) 747-0810",h:"Confirmar no mapa",$:"Prato por ~$10–15",at:"Grand Central Terminal",walk:"2 min a pé",rec:"Escolham entre os balcões; tem de tudo"}
+ ]
+};
+DAYS.forEach(d=>{(MORE_EAT[d.id]||[]).forEach(f=>{if(!d.eat.some(x=>x.n===f.n))d.eat.push(f)})});
 DAYS.forEach(d=>d.eat.forEach(f=>Object.assign(f,FOODX[f.n]||{})));
 
 
