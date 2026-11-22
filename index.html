@@ -765,6 +765,14 @@ DAYS.forEach(d=>{d.stops=d.stops.map(st=>REPLACE[st.n]||st)});
    tip:"Reservem no site oficial, não em revendedores, que cobram bem mais caro."}
  ].filter(Boolean);
  dom.title="Greenpoint, Williamsburg, Bushwick e stand-up";
+ // Terça: Central Perk, o café do Friends, antes da Times Square
+ const ter=day("ter-01"); const ti=ter.stops.findIndex(x=>x.n==="Times Square");
+ if(ti>=0) ter.stops.splice(ti,0,{t:"18:15",n:"Central Perk (café do Friends)",key:true,
+   what:"O café oficial inspirado em Friends, aberto em Times Square com licença da Warner Bros. Não é uma réplica do cenário, mas tem o sofá laranja para a foto.",
+   hl:["Foto no sofá laranja","Cardápio com referências à série, como o sanduíche de almôndega do Joey e o cheesecake da Mama's Little Bakery","Produtos e cafés exclusivos da loja de NY"],
+   info:{"Endereço":["20 Times Square (7th Ave & W 47th St), New York, NY 10036"],"Horário":"Confirmem no Google Maps antes de ir"},
+   go:"Do Bryant Park: uns 10 min a pé subindo a 6th Ave e virando na 47th St.",
+   tip:"Costuma ter fila para a foto no sofá. Vão logo que chegarem na Times Square."});
 
 })();
 
