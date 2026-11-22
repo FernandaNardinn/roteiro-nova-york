@@ -459,6 +459,7 @@ details.row.is-past .tree{filter:grayscale(1);opacity:.7}
 .check input[type="checkbox"]:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
 .check label>span{display:grid;gap:4px}
 .check .checklink{display:inline-flex;width:fit-content;margin-top:4px}
+.daynote{border-radius:12px;display:block;line-height:1.5;padding:8px 16px}
 </style>
 </head>
 <body>
@@ -477,7 +478,6 @@ details.row.is-past .tree{filter:grayscale(1);opacity:.7}
 </nav>
 <main class="wrap"><div class="view" id="view" tabindex="-1"></div></main>
 
-<div class="wrap"><footer>Horários e telefones conferidos em novembro de 2026. No Thanksgiving (26/11) e na Black Friday alguns lugares mudam o horário: confirme no mapa antes de sair. Preços aproximados, sem imposto nem gorjeta.</footer></div>
 
 <script>
 const LINES={A:"ace",C:"ace",E:"ace",G:"g",L:"l",J:"jz",Z:"jz",N:"nqrw",Q:"nqrw",R:"nqrw",W:"nqrw","1":"123","2":"123","3":"123",B:"bdfm",D:"bdfm",F:"bdfm",M:"bdfm","7":"7"};
@@ -724,7 +724,8 @@ DAYS.forEach(d=>{d.stops=d.stops.map(st=>REPLACE[st.n]||st)});
    info:{"Endereço":["289 10th Ave (W 27th St), New York, NY 10001"],"Telefone":"(646) 473-0202","Horário":"Qua, Sex e Sáb 23h–4h","Preço":"Ingressos a partir de ~$65 + taxas"},
    go:"Do Village ou de Midtown: [C][E] até 23 St, depois 10 min a pé. Volta: Uber dividido (uns 25 min).",
    tip:"Se forem também no sábado, comprem os dois ingressos de uma vez."});
- day("sex-27").flag="Black Friday: fujam de Midtown · Balada: Marquee";
+ day("sex-27").flag="Black Friday: fujam de Midtown e confiram no mapa o horário de cada lugar antes de sair, porque alguns mudam no feriado.";
+ day("qui-26").flag="Thanksgiving: muita coisa fecha ou muda o horário. Confiram no mapa antes de sair.";
  // Segunda: Westlight mais cedo + TAO à meia-noite
  const seg=day("seg-30");
  seg.stops=seg.stops.filter(x=>x.n!=="Jantar no Time Out Market");
