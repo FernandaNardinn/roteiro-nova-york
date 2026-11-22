@@ -920,9 +920,7 @@ const EXTRA={
   reservas:{html:()=>resHTML()},
   dicas:{html:()=>`<div class="dayhead"><div class="eyebrow">Para não passar sufoco</div><h2>Dicas</h2></div>
    <div class="card"><ul class="tips">${TIPS.map(([b,t])=>`<li><b>${esc(b)}</b><span>${esc(t)}</span></li>`).join("")}</ul></div>`},
-  contatos:{html:()=>`<div class="dayhead"><div class="eyebrow">Guarde no celular</div><h2>Contatos</h2></div>
-   <div class="ccard sos"><strong>Emergência</strong><p>Polícia, bombeiros e ambulância</p><div class="actions"><a class="btn primary" href="tel:911">${PHONE}911</a></div></div>
-   ${CONTACTS.filter(([n])=>!n.startsWith("Emergência")).map(([n,p])=>{const c=CONTACT_INFO[n]||{};return `<div class="ccard"><strong>${esc(n)}</strong>${c.d?`<p>${esc(c.d)}</p>`:""}<div class="actions">${telBtn(p)}${c.a?mapBtn(c.a,"Mapa",false):""}</div></div>`}).join("")}`}
+  contatos:{html:()=>contactsHTML()}
 };
 const VIEWS=DAYS.map(d=>({id:d.id,top:d.chip.split(" ")[0],chip:d.chip.split(" ").slice(1).join(" ")||d.chip,html:()=>renderDay(d)}));
 
@@ -938,7 +936,7 @@ const daytabs=document.querySelector(".daytabs");
 function setMenu(sec){document.querySelectorAll(".menu a").forEach(a=>a.toggleAttribute("aria-current",false));const m=document.querySelector(`.menu a[data-sec="${sec}"]`);if(m)m.setAttribute("aria-current","page")}
 function show(){
   let id=(location.hash||"").slice(1);
-  if(EXTRA[id]){if(curId!==id)RES_ADDING=false;view.innerHTML=EXTRA[id].html();{const h=view.querySelector("h2");if(h&&curId!==null){h.setAttribute("tabindex","-1");h.focus({preventScroll:true});}}daytabs.hidden=true;view.classList.remove("in-left","in-right");curId=id;setMenu(id);window.scrollTo(0,0);return;}
+  if(EXTRA[id]){if(curId!==id){RES_ADDING=false;CON_ADDING=false;}view.innerHTML=EXTRA[id].html();{const h=view.querySelector("h2");if(h&&curId!==null){h.setAttribute("tabindex","-1");h.focus({preventScroll:true});}}daytabs.hidden=true;view.classList.remove("in-left","in-right");curId=id;setMenu(id);window.scrollTo(0,0);return;}
   if(id==="roteiro"||!VIEWS.find(x=>x.id===id)) id=lastDay||pickDefault();
   const v=VIEWS.find(x=>x.id===id);
   const i=VIEWS.indexOf(v), prevI=VIEWS.findIndex(x=>x.id===curId);
@@ -1297,6 +1295,61 @@ view.addEventListener("click",e=>{
       if(!snap.exists||resWriting||resTimer&&resPending) return;
       const r=sanitizeRes(snap.data()); if(!r) return;
       if(JSON.stringify(r)!==JSON.stringify(RES)){RES=r;try{localStorage.setItem("ny-res",JSON.stringify(RES))}catch(e){} if(curId==="reservas"&&!view.contains(document.activeElement&&document.activeElement.closest("#resform"))) view.innerHTML=resHTML();}
+    },()=>{});
+  }catch(e){}
+})();
+
+
+/* ===== Contatos: fixos + novos ===== */
+let CONS=[],CON_ADDING=false,CON_NOTE="";
+try{const c=JSON.parse(localStorage.getItem("ny-contacts")||"null");if(Array.isArray(c))CONS=sanitizeCons(c)}catch(e){}
+function sanitizeCons(arr){return (Array.isArray(arr)?arr:[]).filter(x=>x&&typeof x.id==="string"&&typeof x.n==="string").slice(0,100).map(x=>({id:x.id.slice(0,40),n:x.n.slice(0,100),p:typeof x.p==="string"?x.p.replace(/[^\d+()\- ]/g,"").slice(0,30):"",a:typeof x.a==="string"?x.a.slice(0,200):"",d:typeof x.d==="string"?x.d.slice(0,200):""}))}
+const telAny=p=>{const digits=p.replace(/[^\d+]/g,"");const href=digits.startsWith("+")?digits:(digits.length===10?"+1"+digits:digits);return `<a class="btn" href="tel:${href}" aria-label="Ligar para ${esc(p)}">${PHONE}${esc(p)}</a>`};
+function contactsHTML(){
+  return `<div class="dayhead"><div class="eyebrow">Guarde no celular</div><h2>Contatos</h2></div>
+   <div class="ccard sos"><strong>Emergência</strong><p>Polícia, bombeiros e ambulância</p><div class="actions"><a class="btn primary" href="tel:911">${PHONE}911</a></div></div>
+   ${CONTACTS.filter(([n])=>!n.startsWith("Emergência")).map(([n,p])=>{const c=CONTACT_INFO[n]||{};return `<div class="ccard"><strong>${esc(n)}</strong>${c.d?`<p>${esc(c.d)}</p>`:""}<div class="actions">${telBtn(p)}${c.a?mapBtn(c.a,"Mapa",false):""}</div></div>`}).join("")}
+   ${CONS.map(c=>`<div class="ccard"><strong>${esc(c.n)}</strong>${c.d?`<p>${esc(c.d)}</p>`:""}<div class="actions">${c.p?telAny(c.p):""}${c.a?mapBtn(c.a,"Mapa",false):""}<button type="button" class="btn small danger" data-cdel="${esc(c.id)}" aria-label="Excluir ${esc(c.n)}">Excluir</button></div></div>`).join("")}
+   ${CON_ADDING?`<form class="addform" id="conform">
+     <h3>Novo contato</h3>
+     <label>Nome<input type="text" name="n" required maxlength="100" placeholder="Ex.: Restaurante, amigo, hotel"></label>
+     <label>Telefone (opcional)<input type="tel" name="p" maxlength="30" placeholder="Ex.: (212) 555-0123"></label>
+     <label>Endereço (opcional)<input type="text" name="a" maxlength="200"></label>
+     <label>Observação (opcional)<input type="text" name="d" maxlength="200" placeholder="Ex.: reserva sex 27, 20h"></label>
+     <div class="eactions"><button type="submit" class="cta">${PLUS}<span>Adicionar</span></button><button type="button" class="btn" data-conact="cancel">Cancelar</button></div>
+   </form>`:`<button type="button" class="cta resadd" data-conact="open">${PLUS}<span>Adicionar contato</span></button>`}
+   ${CON_NOTE?`<p class="savenote" role="status">${esc(CON_NOTE)}</p>`:""}`;
+}
+let conTimer=null,conWriting=false,conPending=false;
+function saveCons(){
+  try{localStorage.setItem("ny-contacts",JSON.stringify(CONS))}catch(e){}
+  if(!DB){CON_NOTE="Salvo neste celular.";return}
+  clearTimeout(conTimer); conTimer=setTimeout(writeCons,400);
+}
+async function writeCons(){
+  if(conWriting){conPending=true;return} conWriting=true;
+  try{await DB.doc("lists/contatos").set({items:CONS,v:1});CON_NOTE="Salvo. Aparece igual em qualquer aparelho."}catch(e){CON_NOTE="Não deu para salvar online. Ficou salvo neste celular."}
+  conWriting=false; const n=view.querySelector(".savenote"); if(n&&curId==="contatos") n.textContent=CON_NOTE;
+  if(conPending){conPending=false;writeCons()}
+}
+view.addEventListener("click",e=>{
+  const ca=e.target.closest("[data-conact]");
+  if(ca){CON_ADDING=ca.dataset.conact==="open";view.innerHTML=contactsHTML();const f=view.querySelector(CON_ADDING?'#conform input[name="n"]':'[data-conact="open"]');if(f)f.focus();return}
+  const d=e.target.closest("[data-cdel]"); if(!d) return;
+  CONS=CONS.filter(c=>c.id!==d.dataset.cdel); saveCons(); view.innerHTML=contactsHTML();
+});
+view.addEventListener("submit",e=>{
+  if(e.target.id!=="conform") return; e.preventDefault();
+  const fd=new FormData(e.target), n=(fd.get("n")||"").toString().trim(); if(!n) return;
+  CONS.push(...sanitizeCons([{id:"k"+Date.now().toString(36),n,p:(fd.get("p")||"").toString(),a:(fd.get("a")||"").toString().trim(),d:(fd.get("d")||"").toString().trim()}]));
+  CON_ADDING=false; saveCons(); view.innerHTML=contactsHTML(); const nb=view.querySelector('[data-conact="open"]'); if(nb) nb.focus();
+});
+(async()=>{
+  try{ if(!window.claude||!window.claude.use) return; const db=await window.claude.use("db"); if(!db) return;
+    db.doc("lists/contatos").onSnapshot(snap=>{
+      if(!snap.exists||conWriting||conTimer&&conPending) return;
+      const d=snap.data(); const c=sanitizeCons(d&&d.items);
+      if(JSON.stringify(c)!==JSON.stringify(CONS)){CONS=c;try{localStorage.setItem("ny-contacts",JSON.stringify(CONS))}catch(e){} if(curId==="contatos"&&!CON_ADDING) view.innerHTML=contactsHTML();}
     },()=>{});
   }catch(e){}
 })();
